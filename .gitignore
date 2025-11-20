@@ -6,3 +6,6 @@ DerivedData/
 .swiftpm/configuration/registries.json
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
+BetterQuickLook.app/
+ThirdParty/
+/Frameworks/VLCKit.xcframework/**/dSYMs/
