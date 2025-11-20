@@ -5,6 +5,7 @@ import Combine
 struct PlayerContainerView: View {
     let engine: PlayerEngine
     @ObservedObject var settings: SettingsStore
+    var fileName: String?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -15,7 +16,26 @@ struct PlayerContainerView: View {
                 PlayerOverlayView(engine: engine, skipInterval: settings.skipInterval)
                     .transition(.opacity)
             }
+            fileOverlay
         }
+    }
+
+    private var fileOverlay: some View {
+        VStack {
+            if let name = fileName {
+                Text(name)
+                    .font(.headline)
+                    .foregroundColor(.white.opacity(0.9))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.black.opacity(0.35))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .padding(.top, 12)
+            }
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .allowsHitTesting(false)
     }
 }
 
@@ -66,9 +86,9 @@ private struct PlayerOverlayView: View {
             controlBar
         }
         .padding(.horizontal, 12)
-        .padding(.bottom, 8)
+        .padding(.bottom, 10)
         .opacity(controlsVisible ? 1 : 0)
-        .animation(.easeInOut(duration: 0.2), value: controlsVisible)
+        .animation(.easeInOut(duration: 0.15), value: controlsVisible)
         .onHover { hovering in
             isHovering = hovering
             if hovering { bumpInteraction() }
@@ -87,34 +107,27 @@ private struct PlayerOverlayView: View {
     }
 
     private var controlBar: some View {
-        VStack(spacing: 6) {
-            HStack {
-                Button(action: togglePlayPause) {
-                    Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                }
-                .buttonStyle(.borderless)
-
-                Text(timeString(sliderValue))
-                    .font(.caption.monospacedDigit())
-                Text("/")
-                    .font(.caption.monospacedDigit())
-                    .foregroundColor(.secondary)
-                Text(timeString(duration))
-                    .font(.caption.monospacedDigit())
-                    .foregroundColor(.secondary)
-
-                Spacer()
-
-                HStack(spacing: 12) {
-                    Button(action: { skip(by: -skipInterval) }) {
-                        Image(systemName: "gobackward.\(Int(skipInterval))")
-                    }.buttonStyle(.borderless)
-
-                    Button(action: { skip(by: skipInterval) }) {
-                        Image(systemName: "goforward.\(Int(skipInterval))")
-                    }.buttonStyle(.borderless)
-                }
+        HStack(spacing: 10) {
+            Button(action: togglePlayPause) {
+                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                    .font(.title3.weight(.medium))
             }
+            .buttonStyle(.borderless)
+
+            Button(action: { skip(by: -skipInterval) }) {
+                Image(systemName: "gobackward.\(Int(skipInterval))")
+            }
+            .buttonStyle(.borderless)
+
+            Button(action: { skip(by: skipInterval) }) {
+                Image(systemName: "goforward.\(Int(skipInterval))")
+            }
+            .buttonStyle(.borderless)
+
+            Text(timeString(sliderValue))
+                .font(.caption.monospacedDigit())
+                .foregroundColor(.white.opacity(0.85))
+                .frame(minWidth: 48, alignment: .trailing)
 
             Slider(
                 value: Binding(
@@ -133,10 +146,20 @@ private struct PlayerOverlayView: View {
                     }
                 }
             )
+            .frame(minWidth: 220)
+
+            Text(timeString(duration))
+                .font(.caption.monospacedDigit())
+                .foregroundColor(.white.opacity(0.85))
+                .frame(minWidth: 48, alignment: .leading)
         }
-        .padding(8)
-        .background(.ultraThinMaterial.opacity(0.8))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .background(.ultraThinMaterial)
+        .background(Color.black.opacity(0.35))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .onTapGesture { bumpInteraction() }
+        .tint(.white)
     }
 
     private func togglePlayPause() {
