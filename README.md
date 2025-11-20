@@ -46,6 +46,30 @@ Binary will be at `.build/release/BetterQuickLook`.
 - Fit video to window shape.
 - Prefer VLC playback.
 
-### Notes
-- With VLC enabled, controls are provided by a custom overlay (since VLCKit lacks native macOS controls). With VLC off, AVKit’s native control bar is used.
-- If you see a runtime load error for VLCKit, ensure the framework is available at `Frameworks/VLCKit.xcframework` and, for local runs, that the macOS slice is copied under `.build/arm64-apple-macosx/Frameworks/VLCKit.framework`.
+### Codec support and known issues
+
+- **AVKit (default)**  
+  - Plays: H.264/HEVC in MP4/MOV, AAC/MP3, and most “normal” Apple formats.  
+  - Does *not* reliably play: AV1, VP8/VP9, older MPEG‑4 Part 2/MPEG‑2, or some MKV/WebM/AVI containers.
+
+- **VLCKit (optional, full coverage)**  
+  - When configured, the app can use VLCKit as a secondary engine for “Prefer VLC playback”.  
+  - This brings most of VLC’s codec support, but with a custom overlay instead of native AVKit controls.  
+  - Known friction: you must manually place the VLCKit framework slice under `.build/arm64-apple-macosx/Frameworks/VLCKit.framework/` for `swift run` to work, because SwiftPM doesn’t manage that at runtime.
+
+- **Minimal FFmpeg fallback (experimental)**  
+  - The `ffmpeg-lite` branch adds a minimal ffmpeg build and a fallback transcoder:
+    - `Scripts/build_ffmpeg_minimal.sh` builds a small static ffmpeg.  
+    - Copy the resulting binary to `Sources/VideoPreview/Resources/ffmpeg/ffmpeg`.  
+    - On launch, the app stages it to `~/Library/Caches/BetterQuickLook/ffmpeg/ffmpeg`, strips the `com.apple.quarantine` flag, marks it executable, and then uses it to transcode unsupported inputs (MKV/WebM/AVI, AV1/VPx/MPEG‑4/Opus/FLAC) to temporary MP4 files before passing them to AVKit.
+  - **Current issue:** On some systems (including this development setup), launching the staged ffmpeg via `Process` still intermittently fails with `POSIXErrorCode.EACCES` (`Permission denied`), even after removing quarantine and setting `chmod 755`. When that happens:
+    - Logs show “Failed to launch ffmpeg: The operation couldn’t be completed. Permission denied”.
+    - No transcoded file is written to `~/Library/Caches/BetterQuickLook/Transcodes`.
+    - The app silently falls back to the original file, so AV1/MPEG‑4 gap formats still do not play.
+  - Root cause (suspected): macOS security/runtime constraints around executing an embedded third‑party binary (code signing, quarantine, and execution from certain locations). A robust fix likely requires:
+    - Shipping a signed, embedded helper tool or  
+    - Moving to a framework-based integration like FFmpegKit that handles signing/packaging.
+
+- **Recommended today**  
+  - For maximum reliability, use AVKit for Apple‑native formats and add VLCKit for “everything else”.  
+  - Treat the ffmpeg fallback as experimental; it is wired in but not yet reliable for AV1/MPEG‑4 on all setups.
