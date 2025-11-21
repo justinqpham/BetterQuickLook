@@ -33,7 +33,6 @@ struct SettingsView: View {
                 Toggle("Match video size on open", isOn: $settings.matchVideoSizeOnOpen)
                 Toggle("Lock aspect ratio while resizing", isOn: $settings.lockAspectRatio)
                 Toggle("Make video follow window shape", isOn: $settings.fillWindowAspect)
-                Toggle("Prefer VLC playback (full codecs, no native controls)", isOn: $settings.preferVLCEngine)
             }
 
             Spacer()

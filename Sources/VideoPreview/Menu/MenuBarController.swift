@@ -51,7 +51,6 @@ final class MenuBarController {
         addToggle(title: "Match video size on open", type: .matchSize, state: settings.matchVideoSizeOnOpen, to: menu)
         addToggle(title: "Lock aspect ratio", type: .lockAspect, state: settings.lockAspectRatio, to: menu)
         addToggle(title: "Fit video to window shape", type: .fillWindow, state: settings.fillWindowAspect, to: menu)
-        addToggle(title: "Prefer VLC playback", type: .preferVLC, state: settings.preferVLCEngine, to: menu)
 
         let quitItem = NSMenuItem(title: "Quit Better QuickLook", action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
@@ -76,10 +75,6 @@ final class MenuBarController {
         settings.$fillWindowAspect.sink { [weak self] value in
             self?.toggleItems[.fillWindow]?.state = value ? .on : .off
         }.store(in: &bindings)
-
-        settings.$preferVLCEngine.sink { [weak self] value in
-            self?.toggleItems[.preferVLC]?.state = value ? .on : .off
-        }.store(in: &bindings)
     }
 
     @objc private func quitApp() {
@@ -101,8 +96,6 @@ final class MenuBarController {
             settings.updateLockAspectRatio(newState)
         case .fillWindow:
             settings.updateFillWindowAspect(newState)
-        case .preferVLC:
-            settings.updatePreferVLCEngine(newState)
         }
     }
 
@@ -125,5 +118,4 @@ private enum SettingsToggle: Int {
     case matchSize = 1
     case lockAspect = 2
     case fillWindow = 3
-    case preferVLC = 4
 }

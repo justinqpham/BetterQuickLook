@@ -157,34 +157,9 @@ enum PlayerEngineFactory {
     @MainActor
     static func make(preferVLC: Bool) -> PlayerEngine {
         #if canImport(VLCKit)
-        if preferVLC { return VLCPlayerEngine() }
+        return VLCPlayerEngine()
+        #else
+        return AVPlayerEngine()
         #endif
-        return HybridPlayerEngine()
     }
-}
-
-@MainActor
-final class HybridPlayerEngine: PlayerEngine {
-    private let transcoder = FFmpegTranscoder.shared
-    private let base = AVPlayerEngine()
-    private var latestURL: URL?
-
-    var containerView: NSView { base.containerView }
-    var currentPresentationSize: CGSize? { base.currentPresentationSize }
-    var usesNativeControls: Bool { base.usesNativeControls }
-    var isPlaying: Bool { base.isPlaying }
-    var currentTime: Double { base.currentTime }
-    var duration: Double? { base.duration }
-
-    func load(url: URL) {
-        latestURL = url
-        let playable = transcoder.preparePlayableURL(from: url)
-        base.load(url: playable)
-    }
-
-    func togglePlayPause() { base.togglePlayPause() }
-    func pause() { base.pause() }
-    func skip(by seconds: Double) { base.skip(by: seconds) }
-    func setFillWindowAspect(_ fill: Bool) { base.setFillWindowAspect(fill) }
-    func seek(to seconds: Double) { base.seek(to: seconds) }
 }

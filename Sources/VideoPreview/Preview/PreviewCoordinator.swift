@@ -6,7 +6,6 @@ final class PreviewCoordinator {
     private let settings: SettingsStore
     private let selectionMonitor: FinderSelectionMonitor
     private var playerWindowController: PlayerWindowController
-    private var settingsCancellable: AnyCancellable?
     private var lastURL: URL?
     private var isMonitoringSelection = false
     private var isPlayerVisible = false
@@ -16,14 +15,9 @@ final class PreviewCoordinator {
         self.selectionMonitor = selectionMonitor
         self.playerWindowController = PlayerWindowController(
             settings: settings,
-            preferVLC: settings.preferVLCEngine,
+            preferVLC: false,
             onRequestClose: nil
         )
-        settingsCancellable = settings.$preferVLCEngine
-            .removeDuplicates()
-            .sink { [weak self] prefer in
-                self?.rebuildPlayer(preferVLC: prefer)
-            }
         self.playerWindowController.onRequestClose = { [weak self] in
             self?.closePreview()
         }
@@ -77,22 +71,5 @@ final class PreviewCoordinator {
     private func stopMonitoringSelection() {
         selectionMonitor.stop()
         isMonitoringSelection = false
-    }
-
-    private func rebuildPlayer(preferVLC: Bool) {
-        let wasVisible = isPlayerVisible
-        playerWindowController.closePreview()
-        playerWindowController = PlayerWindowController(
-            settings: settings,
-            preferVLC: preferVLC,
-            onRequestClose: { [weak self] in
-                self?.closePreview()
-            }
-        )
-        isPlayerVisible = false
-        if wasVisible, let url = lastURL {
-            playerWindowController.show(url: url)
-            isPlayerVisible = true
-        }
     }
 }
