@@ -12,10 +12,14 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
     private var currentVideoSize: CGSize?
     private var currentFileName: String?
     private var cancellables = Set<AnyCancellable>()
+    var onRequestClose: (() -> Void)?
+    private var outsideClickMonitor: Any?
+    private var keyMonitor: Any?
 
-    init(settings: SettingsStore, preferVLC: Bool) {
+    init(settings: SettingsStore, preferVLC: Bool, onRequestClose: (() -> Void)? = nil) {
         self.settings = settings
         engine = PlayerEngineFactory.make(preferVLC: preferVLC)
+        self.onRequestClose = onRequestClose
         hostingController = NSHostingController(rootView: PlayerContainerView(engine: engine, settings: settings, fileName: nil))
 
         let panel = PlayerPanel(contentViewController: hostingController)
@@ -69,6 +73,8 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
         engine.setFillWindowAspect(settings.fillWindowAspect)
         window?.center()
         orderFront()
+        startOutsideClickMonitoring()
+        startKeyMonitoring()
         Task { [weak self] in
             guard let self else { return }
             if let size = await self.naturalSize(for: url) {
@@ -86,10 +92,14 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
     func closePreview() {
         engine.pause()
         window?.orderOut(nil)
+        stopOutsideClickMonitoring()
+        stopKeyMonitoring()
     }
 
     func windowWillClose(_ notification: Notification) {
         engine.pause()
+        stopOutsideClickMonitoring()
+        stopKeyMonitoring()
     }
 
     private func orderFront() {
@@ -188,4 +198,43 @@ private final class PlayerPanel: NSPanel {
 
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
+}
+
+private extension PlayerWindowController {
+    func startOutsideClickMonitoring() {
+        guard outsideClickMonitor == nil else { return }
+        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            guard let self, let window = self.window else { return }
+            let point = NSEvent.mouseLocation
+            if !window.frame.contains(point) {
+                self.onRequestClose?()
+            }
+        }
+    }
+
+    func stopOutsideClickMonitoring() {
+        if let monitor = outsideClickMonitor {
+            NSEvent.removeMonitor(monitor)
+            outsideClickMonitor = nil
+        }
+    }
+
+    func startKeyMonitoring() {
+        guard keyMonitor == nil else { return }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return event }
+            if event.keyCode == 49 {
+                self.onRequestClose?()
+                return nil
+            }
+            return event
+        }
+    }
+
+    func stopKeyMonitoring() {
+        if let monitor = keyMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyMonitor = nil
+        }
+    }
 }

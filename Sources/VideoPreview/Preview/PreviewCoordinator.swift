@@ -9,25 +9,34 @@ final class PreviewCoordinator {
     private var settingsCancellable: AnyCancellable?
     private var lastURL: URL?
     private var isMonitoringSelection = false
+    private var isPlayerVisible = false
 
     init(settings: SettingsStore, selectionMonitor: FinderSelectionMonitor) {
         self.settings = settings
         self.selectionMonitor = selectionMonitor
-        self.playerWindowController = PlayerWindowController(settings: settings, preferVLC: settings.preferVLCEngine)
+        self.playerWindowController = PlayerWindowController(
+            settings: settings,
+            preferVLC: settings.preferVLCEngine,
+            onRequestClose: nil
+        )
         settingsCancellable = settings.$preferVLCEngine
             .removeDuplicates()
             .sink { [weak self] prefer in
                 self?.rebuildPlayer(preferVLC: prefer)
             }
+        self.playerWindowController.onRequestClose = { [weak self] in
+            self?.closePreview()
+        }
     }
 
     var isPreviewVisible: Bool {
-        playerWindowController.isVisible
+        isPlayerVisible
     }
 
     func presentPreview(for url: URL) {
         lastURL = url
         playerWindowController.show(url: url)
+        isPlayerVisible = true
         startMonitoringSelection()
     }
 
@@ -44,9 +53,11 @@ final class PreviewCoordinator {
     }
 
     func closePreview() {
+        guard isPlayerVisible else { return }
         lastURL = nil
         stopMonitoringSelection()
         playerWindowController.closePreview()
+        isPlayerVisible = false
     }
 
     private func startMonitoringSelection() {
@@ -56,6 +67,7 @@ final class PreviewCoordinator {
             guard let self else { return }
             if let url {
                 self.playerWindowController.show(url: url)
+                self.isPlayerVisible = true
             } else {
                 self.closePreview()
             }
@@ -68,11 +80,19 @@ final class PreviewCoordinator {
     }
 
     private func rebuildPlayer(preferVLC: Bool) {
-        let wasVisible = playerWindowController.isVisible
+        let wasVisible = isPlayerVisible
         playerWindowController.closePreview()
-        playerWindowController = PlayerWindowController(settings: settings, preferVLC: preferVLC)
+        playerWindowController = PlayerWindowController(
+            settings: settings,
+            preferVLC: preferVLC,
+            onRequestClose: { [weak self] in
+                self?.closePreview()
+            }
+        )
+        isPlayerVisible = false
         if wasVisible, let url = lastURL {
             playerWindowController.show(url: url)
+            isPlayerVisible = true
         }
     }
 }

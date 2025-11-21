@@ -15,6 +15,9 @@ let package = Package(
             name: "VideoPreview",
             dependencies: [
                 .target(name: "VLCKit")
+            ],
+            resources: [
+                .process("Resources")
             ]
         )
     ]
