@@ -9,6 +9,7 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
     private let settings: SettingsStore
     private let engine: PlayerEngine
     private let hostingController: NSHostingController<PlayerContainerView>
+    private let containerModel = PlayerContainerModel()
     private var currentVideoSize: CGSize?
     private var currentFileName: String?
     private var cancellables = Set<AnyCancellable>()
@@ -20,7 +21,7 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
         self.settings = settings
         engine = PlayerEngineFactory.make(preferVLC: preferVLC)
         self.onRequestClose = onRequestClose
-        hostingController = NSHostingController(rootView: PlayerContainerView(engine: engine, settings: settings, fileName: nil))
+        hostingController = NSHostingController(rootView: PlayerContainerView(model: containerModel, engine: engine, settings: settings))
 
         let panel = PlayerPanel(contentViewController: hostingController)
         panel.setContentSize(NSSize(width: 960, height: 540))
@@ -69,7 +70,7 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     func show(url: URL) {
         currentFileName = url.lastPathComponent
-        hostingController.rootView.fileName = currentFileName
+        containerModel.fileName = currentFileName
         engine.load(url: url)
         engine.setFillWindowAspect(settings.fillWindowAspect)
         window?.center()
@@ -171,6 +172,8 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
             return NSSize(width: frameSize.width, height: frameSize.width / ratio)
         }
     }
+
+
 }
 
 private final class PlayerPanel: NSPanel {
@@ -238,3 +241,4 @@ private extension PlayerWindowController {
         }
     }
 }
+

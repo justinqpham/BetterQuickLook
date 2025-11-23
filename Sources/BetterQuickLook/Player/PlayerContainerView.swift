@@ -1,11 +1,15 @@
+final class PlayerContainerModel: ObservableObject {
+    @Published var fileName: String?
+}
+
 import AppKit
 import SwiftUI
 import Combine
 
 struct PlayerContainerView: View {
+    @ObservedObject var model: PlayerContainerModel
     let engine: PlayerEngine
     @ObservedObject var settings: SettingsStore
-    var fileName: String?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -22,7 +26,7 @@ struct PlayerContainerView: View {
 
     private var fileOverlay: some View {
         VStack {
-            if let name = fileName {
+            if let name = model.fileName {
                 Text(name)
                     .font(.headline)
                     .foregroundColor(.white.opacity(0.9))

@@ -13,13 +13,12 @@ Better QuickLook replaces the built-in macOS Quick Look for videos with a smarte
 
 ### Build & Run
 
-**Important**: VLCKit framework requires a manual copy step for `swift run` to work properly.
+**Important**: If you clean `.build`, bootstrap VLCKit once, then `swift run` works normally.
 
 From the project root:
 ```bash
-# Copy VLCKit framework to the correct build location
-mkdir -p .build/arm64-apple-macosx/Frameworks
-cp -R Frameworks/VLCKit.xcframework/macos-arm64_x86_64/VLCKit.framework .build/arm64-apple-macosx/Frameworks/
+# Stage VLCKit (only needed after a clean)
+./Scripts/bootstrap-vlckit.sh
 
 # Run the application
 swift run
@@ -32,7 +31,7 @@ Release binary:
 swift build -c release
 mkdir -p .build/release/Frameworks
 cp -R Frameworks/VLCKit.xcframework/macos-arm64_x86_64/VLCKit.framework .build/release/Frameworks/
-.build/release/VideoPreview
+.build/release/BetterQuickLook
 ```
 
 **Note**: The VLCKit framework must be present in `Frameworks/VLCKit.xcframework`. The app uses VLCKit for all video playback to ensure universal codec support.
@@ -48,9 +47,11 @@ APP_NAME="BetterQuickLook.app"
 rm -rf "$APP_NAME"
 mkdir -p "$APP_NAME/Contents/MacOS" "$APP_NAME/Contents/Frameworks" "$APP_NAME/Contents/Resources"
 
-cp .build/release/VideoPreview "$APP_NAME/Contents/MacOS/VideoPreview"
-cp -R .build/arm64-apple-macosx/release/VLCKit.framework "$APP_NAME/Contents/Frameworks/"
-cp -R .build/arm64-apple-macosx/release/BetterQuickLook_VideoPreview.bundle "$APP_NAME/Contents/Resources/"
+cp .build/release/BetterQuickLook "$APP_NAME/Contents/MacOS/BetterQuickLook"
+cp -R Frameworks/VLCKit.xcframework/macos-arm64_x86_64/VLCKit.framework "$APP_NAME/Contents/Frameworks/"
+cp -R .build/arm64-apple-macosx/release/BetterQuickLook_BetterQuickLook.bundle "$APP_NAME/Contents/Resources/"
+cp Sources/BetterQuickLook/Resources/BetterQuickLookAppIcon.png "$APP_NAME/Contents/Resources/"
+cp Sources/BetterQuickLook/Resources/BetterQuickLookMenuBarIcon.png "$APP_NAME/Contents/Resources/"
 
 cat > "$APP_NAME/Contents/Info.plist" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -68,7 +69,9 @@ cat > "$APP_NAME/Contents/Info.plist" <<'EOF'
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
     <key>CFBundleExecutable</key>
-    <string>VideoPreview</string>
+    <string>BetterQuickLook</string>
+    <key>CFBundleIconFile</key>
+    <string>BetterQuickLookAppIcon</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleSupportedPlatforms</key>
@@ -87,6 +90,10 @@ EOF
 ```
 
 Open with `open BetterQuickLook.app`. (Bundle is unsigned; right-click → Open once if Gatekeeper prompts.)
+
+### Troubleshooting
+- **Packaged app doesn’t intercept Space** – macOS occasionally drops Accessibility permission when you rebuild the bundle. Remove Better QuickLook from System Settings → Privacy & Security → Accessibility, add it again, and relaunch the app.
+- **`swift run`/`swift build` complain about missing VLCKit headers** – delete `.build`, then run `./Scripts/bootstrap-vlckit.sh` to restage the framework before launching.
 
 ### Controls
 - Space (Finder): open/close preview for the selected video.

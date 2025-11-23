@@ -12,12 +12,19 @@ let package = Package(
             path: "Frameworks/VLCKit.xcframework"
         ),
         .executableTarget(
-            name: "VideoPreview",
+            name: "BetterQuickLook",
             dependencies: [
                 .target(name: "VLCKit")
             ],
             resources: [
                 .process("Resources")
+            ],
+            linkerSettings: [
+                .unsafeFlags([
+                    "-Xlinker", "-rpath",
+                    "-Xlinker", "@executable_path/../../../Frameworks/VLCKit.xcframework/macos-arm64_x86_64",
+                    "-F", "Frameworks/VLCKit.xcframework/macos-arm64_x86_64"
+                ])
             ]
         )
     ]

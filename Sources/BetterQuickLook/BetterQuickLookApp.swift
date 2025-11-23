@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct VideoPreviewApp: App {
+struct BetterQuickLookApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var settings = SettingsStore.shared
 

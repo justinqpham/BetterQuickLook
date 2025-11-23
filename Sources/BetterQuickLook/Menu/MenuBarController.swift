@@ -23,11 +23,18 @@ final class MenuBarController {
         self.onQuit = onQuit
         self.onTogglePreview = onTogglePreview
 
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "play.rectangle", accessibilityDescription: "VideoPreview")
-            button.image?.isTemplate = true
+            if let image = Bundle.module.image(forResource: NSImage.Name("BetterQuickLookMenuBarIcon")) {
+                button.image = image
+                button.image?.isTemplate = true
+                button.image?.size = NSSize(width: 18, height: 18)
+            } else {
+                button.image = NSImage(systemSymbolName: "play.rectangle", accessibilityDescription: "BetterQuickLook")
+                button.image?.isTemplate = true
+                button.image?.size = NSSize(width: 18, height: 18)
+            }
             button.toolTip = "Better QuickLook"
         }
 
