@@ -79,8 +79,8 @@ final class AVPlayerEngine: NSObject, PlayerEngine {
     }
 
     func setFillWindowAspect(_ fill: Bool) {
-        // .resize stretches to window shape; .resizeAspect preserves aspect.
-        playerView.videoGravity = fill ? .resize : .resizeAspect
+        // Fill crops to the window shape; off keeps aspect-fitted view.
+        playerView.videoGravity = fill ? .resizeAspectFill : .resizeAspect
     }
 
     func seek(to seconds: Double) {
@@ -95,6 +95,9 @@ import VLCKit
 final class VLCPlayerEngine: NSObject, PlayerEngine {
     private let videoView = VLCVideoView()
     private let mediaPlayer = VLCMediaPlayer()
+    private var frameObserver: Any?
+    private var stretchToWindowShape = false
+    private var aspectCString: UnsafeMutablePointer<Int8>?
 
     var currentPresentationSize: CGSize? {
         // VLCKit exposes videoSize but may be zero until playback starts; fallback to nil.
@@ -115,6 +118,18 @@ final class VLCPlayerEngine: NSObject, PlayerEngine {
     override init() {
         super.init()
         mediaPlayer.drawable = videoView
+        videoView.fillScreen = true
+        videoView.postsFrameChangedNotifications = true
+        frameObserver = NotificationCenter.default.addObserver(
+            forName: NSView.frameDidChangeNotification,
+            object: videoView,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.applyFillMode()
+            }
+        }
+        applyFillMode()
     }
 
     var containerView: NSView { videoView }
@@ -142,13 +157,34 @@ final class VLCPlayerEngine: NSObject, PlayerEngine {
     }
 
     func setFillWindowAspect(_ fill: Bool) {
-        // For VLCKit, aspect ratio is managed by the view/player; leave default (aspect) unless stretching is requested.
-        // VLCKit macOS does not expose a direct stretch toggle; keep default behavior.
+        stretchToWindowShape = fill
+        applyFillMode()
     }
 
     func seek(to seconds: Double) {
         let millis = Int32(max(0, seconds * 1000))
         mediaPlayer.time = VLCTime(int: millis)
+    }
+
+    @MainActor
+    deinit {
+        if let observer = frameObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+
+    private func applyFillMode() {
+        mediaPlayer.videoAspectRatio = nil // reset to natural aspect
+        mediaPlayer.scaleFactor = 0 // let VLC size to the drawable
+
+        guard stretchToWindowShape else { return }
+        let size = videoView.bounds.size
+        guard size.width > 0, size.height > 0 else { return }
+        let aspect = size.width / size.height
+        let aspectString = String(format: "%.6f:1", aspect)
+        aspectString.withCString { cString in
+            mediaPlayer.videoAspectRatio = UnsafeMutablePointer(mutating: cString)
+        }
     }
 }
 #endif

@@ -69,6 +69,7 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     func show(url: URL) {
         currentFileName = url.lastPathComponent
+        hostingController.rootView.fileName = currentFileName
         engine.load(url: url)
         engine.setFillWindowAspect(settings.fillWindowAspect)
         window?.center()
@@ -146,7 +147,6 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
         )
         let frame = NSRect(origin: origin, size: frameRect.size)
         window.setFrame(frame, display: true, animate: true)
-        hostingController.rootView.fileName = currentFileName
     }
 
     private func updateAspectLock() {

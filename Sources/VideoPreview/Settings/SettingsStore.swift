@@ -9,7 +9,7 @@ final class SettingsStore: ObservableObject {
     static let maxSkipInterval: Double = 30.0
     static let defaultMatchVideoSizeOnOpen = true
     static let defaultLockAspectRatio = true
-    static let defaultFillWindowAspect = false
+    static let defaultFillWindowAspect = true
     static let defaultPreferVLCEngine = false
 
     @Published var skipInterval: Double {
