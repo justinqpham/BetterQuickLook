@@ -4,6 +4,7 @@ Better QuickLook replaces the built-in macOS Quick Look for videos with a smarte
 
 ### Features
 - Spacebar in Finder opens the selected video via our player (Accessibility permission required for key interception).
+- Non-video files fall back to macOS Quick Look; spacebar interception is video-only.
 - Arrow keys skip forward/backward; skip duration is configurable (1–30s).
 - Menu bar toggles for: match video size on open, lock aspect ratio, and fit video to window shape.
 - Universal codec support: plays all video formats using VLCKit (H.264, HEVC, AV1, VP9, VP8, MPEG-4, etc.).
@@ -35,6 +36,57 @@ cp -R Frameworks/VLCKit.xcframework/macos-arm64_x86_64/VLCKit.framework .build/r
 ```
 
 **Note**: The VLCKit framework must be present in `Frameworks/VLCKit.xcframework`. The app uses VLCKit for all video playback to ensure universal codec support.
+
+### Package the .app bundle
+
+Create a standalone `BetterQuickLook.app` in the project root:
+
+```bash
+swift build -c release
+
+APP_NAME="BetterQuickLook.app"
+rm -rf "$APP_NAME"
+mkdir -p "$APP_NAME/Contents/MacOS" "$APP_NAME/Contents/Frameworks" "$APP_NAME/Contents/Resources"
+
+cp .build/release/VideoPreview "$APP_NAME/Contents/MacOS/VideoPreview"
+cp -R .build/arm64-apple-macosx/release/VLCKit.framework "$APP_NAME/Contents/Frameworks/"
+cp -R .build/arm64-apple-macosx/release/BetterQuickLook_VideoPreview.bundle "$APP_NAME/Contents/Resources/"
+
+cat > "$APP_NAME/Contents/Info.plist" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Better QuickLook</string>
+    <key>CFBundleDisplayName</key>
+    <string>Better QuickLook</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.justinqpham.BetterQuickLook</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleExecutable</key>
+    <string>VideoPreview</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleSupportedPlatforms</key>
+    <array>
+        <string>MacOSX</string>
+    </array>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Better QuickLook needs access to Finder to read the current selection for preview.</string>
+</dict>
+</plist>
+EOF
+```
+
+Open with `open BetterQuickLook.app`. (Bundle is unsigned; right-click → Open once if Gatekeeper prompts.)
 
 ### Controls
 - Space (Finder): open/close preview for the selected video.

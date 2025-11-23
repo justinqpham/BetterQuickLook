@@ -82,10 +82,13 @@ final class ShortcutMonitor {
             case 49: // space
                 if isPreviewVisible() {
                     onCloseSelection()
-                } else if let url = selectionProvider.firstVideoURL() {
-                    onOpenSelection(url)
+                    return nil
                 }
-                return nil // block native Quick Look
+                if let url = selectionProvider.firstVideoURL() {
+                    onOpenSelection(url)
+                    return nil // block native Quick Look when we handled it
+                }
+                return Unmanaged.passUnretained(event) // let macOS Quick Look handle non-video
             case 123: // left arrow
                 if isPreviewVisible() {
                     onSkipBack()
