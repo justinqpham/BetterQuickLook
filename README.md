@@ -93,6 +93,7 @@ Open with `open BetterQuickLook.app`. (Bundle is unsigned; right-click → Open 
 
 ### Troubleshooting
 - **Packaged app doesn’t intercept Space** – macOS occasionally drops Accessibility permission when you rebuild the bundle. Remove Better QuickLook from System Settings → Privacy & Security → Accessibility, add it again, and relaunch the app.
+- **Packaged app doesn’t request Finder control (Automation)** – run `tccutil reset AppleEvents com.justinqpham.BetterQuickLook`, launch the app, press Space in Finder, and click OK on the Finder-control prompt so it reappears under System Settings → Privacy & Security → Automation.
 - **`swift run`/`swift build` complain about missing VLCKit headers** – delete `.build`, then run `./Scripts/bootstrap-vlckit.sh` to restage the framework before launching.
 
 ### Controls
