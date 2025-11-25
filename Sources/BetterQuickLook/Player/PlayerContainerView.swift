@@ -7,6 +7,8 @@ import SwiftUI
 import Combine
 
 struct PlayerContainerView: View {
+    @State private var showFileName = false
+    @State private var hideTask: Task<Void, Never>?
     @ObservedObject var model: PlayerContainerModel
     let engine: PlayerEngine
     @ObservedObject var settings: SettingsStore
@@ -22,11 +24,14 @@ struct PlayerContainerView: View {
             }
             fileOverlay
         }
+        .onAppear { restartFileNameTimer() }
+        .onChange(of: model.fileName) { _ in restartFileNameTimer() }
+        .onDisappear { hideTask?.cancel() }
     }
 
     private var fileOverlay: some View {
         VStack {
-            if let name = model.fileName {
+            if showFileName, let name = model.fileName {
                 Text(name)
                     .font(.headline)
                     .foregroundColor(.white.opacity(0.9))
@@ -41,6 +46,19 @@ struct PlayerContainerView: View {
         .frame(maxWidth: .infinity)
         .allowsHitTesting(false)
     }
+    private func restartFileNameTimer() {
+        hideTask?.cancel()
+        guard model.fileName != nil else {
+            showFileName = false
+            return
+        }
+        showFileName = true
+        hideTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(5))
+            showFileName = false
+        }
+    }
+
 }
 
 private struct EngineHostView: NSViewRepresentable {
