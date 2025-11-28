@@ -70,7 +70,7 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     func show(url: URL) {
         currentFileName = url.lastPathComponent
-        containerModel.fileName = currentFileName
+        containerModel.updateFileName(url.lastPathComponent)
         engine.load(url: url)
         engine.setFillWindowAspect(settings.fillWindowAspect)
         window?.center()

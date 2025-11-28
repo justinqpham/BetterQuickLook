@@ -1,5 +1,11 @@
 final class PlayerContainerModel: ObservableObject {
     @Published var fileName: String?
+    @Published var fileNameUpdateTrigger: Int = 0
+
+    func updateFileName(_ name: String) {
+        fileName = name
+        fileNameUpdateTrigger += 1
+    }
 }
 
 import AppKit
@@ -25,7 +31,7 @@ struct PlayerContainerView: View {
             fileOverlay
         }
         .onAppear { restartFileNameTimer() }
-        .onChange(of: model.fileName) { _ in restartFileNameTimer() }
+        .onChange(of: model.fileNameUpdateTrigger) { _ in restartFileNameTimer() }
         .onDisappear { hideTask?.cancel() }
     }
 
@@ -55,6 +61,7 @@ struct PlayerContainerView: View {
         showFileName = true
         hideTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else { return }
             showFileName = false
         }
     }
