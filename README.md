@@ -82,11 +82,24 @@ cat > "$APP_NAME/Contents/Info.plist" <<'EOF'
     <string>13.0</string>
     <key>LSUIElement</key>
     <true/>
+    <key>NSAccessibilityUsageDescription</key>
+    <string>Better QuickLook needs Accessibility access to intercept the spacebar key to open video previews.</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>Better QuickLook needs access to Finder to read the current selection for preview.</string>
 </dict>
 </plist>
 EOF
+
+# Generate app icon
+mkdir -p /tmp/icon.iconset
+for size in 16 32 128 256 512; do
+  sips -z $size $size Sources/BetterQuickLook/Resources/BetterQuickLookAppIcon.png --out /tmp/icon.iconset/icon_${size}x${size}.png
+  sips -z $((size*2)) $((size*2)) Sources/BetterQuickLook/Resources/BetterQuickLookAppIcon.png --out /tmp/icon.iconset/icon_${size}x${size}@2x.png
+done
+iconutil -c icns /tmp/icon.iconset -o "$APP_NAME/Contents/Resources/BetterQuickLookAppIcon.icns"
+
+# Code sign
+codesign --force --deep --sign - "$APP_NAME"
 ```
 
 Open with `open BetterQuickLook.app`. (Bundle is unsigned; right-click → Open once if Gatekeeper prompts.)
