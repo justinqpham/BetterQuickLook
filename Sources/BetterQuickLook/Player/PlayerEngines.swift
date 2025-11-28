@@ -48,6 +48,8 @@ final class AVPlayerEngine: NSObject, PlayerEngine {
     }
 
     func load(url: URL) {
+        // Clear previous item first to prevent showing old frames if new file fails
+        player.replaceCurrentItem(with: nil)
         let item = AVPlayerItem(url: url)
         player.replaceCurrentItem(with: item)
         player.play()
@@ -135,6 +137,22 @@ final class VLCPlayerEngine: NSObject, PlayerEngine {
     var containerView: NSView { videoView }
 
     func load(url: URL) {
+        // Stop and clear any previous media to prevent showing old frames if new file fails
+        mediaPlayer.stop()
+        mediaPlayer.media = nil
+        mediaPlayer.drawable = nil
+
+        // Clear the CALayer contents that VLC wrote to - safely on main thread
+        if let layer = videoView.layer {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            layer.contents = nil
+            // Only clear sublayer contents, don't remove them to avoid race conditions with VLC
+            layer.sublayers?.forEach { $0.contents = nil }
+            CATransaction.commit()
+        }
+
+        mediaPlayer.drawable = videoView
         mediaPlayer.media = VLCMedia(url: url)
         mediaPlayer.play()
     }

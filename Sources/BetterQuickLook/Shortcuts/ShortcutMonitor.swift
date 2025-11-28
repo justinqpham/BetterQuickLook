@@ -29,7 +29,21 @@ final class ShortcutMonitor {
     }
 
     func start() {
-        guard eventTap == nil else { return }
+        NSLog("🚀 ShortcutMonitor.start() called")
+        guard eventTap == nil else {
+            NSLog("⚠️ Event tap already exists, skipping")
+            return
+        }
+
+        // Check if Accessibility permission is granted
+        let accessEnabled = AXIsProcessTrusted()
+        NSLog("🔐 AXIsProcessTrusted() returned: %@", accessEnabled ? "true" : "false")
+        guard accessEnabled else {
+            NSLog("❌ Accessibility permission not granted - event tap cannot be created")
+            NSLog("📋 Please grant Accessibility permission in System Settings → Privacy & Security → Accessibility")
+            return
+        }
+        NSLog("✅ Accessibility permission granted - creating event tap")
 
         let mask = CGEventMask(1 << CGEventType.keyDown.rawValue)
         let callback: CGEventTapCallBack = { proxy, type, event, refcon in
@@ -45,7 +59,12 @@ final class ShortcutMonitor {
             eventsOfInterest: mask,
             callback: callback,
             userInfo: UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
-        ) else { return }
+        ) else {
+            NSLog("❌ Failed to create event tap - this shouldn't happen if Accessibility is granted")
+            NSLog("📋 Bundle ID: %@", Bundle.main.bundleIdentifier ?? "unknown")
+            NSLog("📋 Bundle path: %@", Bundle.main.bundlePath)
+            return
+        }
 
         eventTap = tap
         runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
@@ -55,6 +74,7 @@ final class ShortcutMonitor {
         }
 
         CGEvent.tapEnable(tap: tap, enable: true)
+        NSLog("✅ Event tap created and enabled successfully")
     }
 
     func stop() {
@@ -71,6 +91,14 @@ final class ShortcutMonitor {
     }
 
     private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        // Re-enable the event tap if macOS disabled it due to timeout or user input
+        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if let tap = eventTap {
+                CGEvent.tapEnable(tap: tap, enable: true)
+            }
+            return Unmanaged.passUnretained(event)
+        }
+
         guard type == .keyDown else {
             return Unmanaged.passUnretained(event)
         }
