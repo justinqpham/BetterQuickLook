@@ -92,16 +92,24 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
     func skipBackward() { engine.skip(by: -settings.skipInterval) }
 
     func closePreview() {
-        engine.pause()
+        stopPlayback()
         window?.orderOut(nil)
         stopOutsideClickMonitoring()
         stopKeyMonitoring()
     }
 
     func windowWillClose(_ notification: Notification) {
-        engine.pause()
+        stopPlayback()
         stopOutsideClickMonitoring()
         stopKeyMonitoring()
+    }
+
+    private func stopPlayback() {
+        engine.pause()
+        // For VLC engine, we need to clear the media to fully stop playback
+        if let vlcEngine = engine as? VLCPlayerEngine {
+            vlcEngine.stop()
+        }
     }
 
     private func orderFront() {

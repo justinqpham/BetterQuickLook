@@ -117,6 +117,11 @@ final class VLCPlayerEngine: NSObject, PlayerEngine {
         return Double(len.intValue) / 1000.0
     }
 
+    func stop() {
+        mediaPlayer.stop()
+        mediaPlayer.media = nil
+    }
+
     override init() {
         super.init()
         mediaPlayer.drawable = videoView
@@ -140,10 +145,10 @@ final class VLCPlayerEngine: NSObject, PlayerEngine {
         // Stop and clear any previous media to prevent showing old frames if new file fails
         mediaPlayer.stop()
         mediaPlayer.media = nil
-        mediaPlayer.drawable = nil
 
         // Clear the CALayer contents that VLC wrote to - safely on main thread
-        if let layer = videoView.layer {
+        // Only clear if there was previous content to avoid unnecessary work
+        if mediaPlayer.drawable != nil, let layer = videoView.layer, layer.contents != nil {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             layer.contents = nil
